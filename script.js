@@ -221,15 +221,42 @@ function renderAddedList(){
 function renderTotals(){
   safeSetHTML(DOM.totalsBody, '');
   const totals=manager.totals();
+
+  let grand = 0;
   totals.forEach((t,i)=>{
     if(t===0) return;
+    grand += t;
+
     const tr=document.createElement('tr');
     const td1=document.createElement('td');
-    const img=document.createElement('img'); img.className='tot-img'; img.src=manager.ingredients[i].img; img.alt=manager.ingredients[i].name; img.onerror=()=>{ img.style.opacity='0.35'; };
-    td1.appendChild(img); td1.appendChild(document.createTextNode(manager.ingredients[i].name));
-    const td2=document.createElement('td'); td2.textContent=t;
-    tr.appendChild(td1); tr.appendChild(td2); DOM.totalsBody && DOM.totalsBody.appendChild(tr);
+    const img=document.createElement('img');
+    img.className='tot-img';
+    img.src=manager.ingredients[i].img;
+    img.alt=manager.ingredients[i].name;
+    img.onerror=()=>{ img.style.opacity='0.35'; };
+    td1.appendChild(img);
+    td1.appendChild(document.createTextNode(manager.ingredients[i].name));
+
+    const td2=document.createElement('td');
+    td2.textContent=t;
+
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    DOM.totalsBody && DOM.totalsBody.appendChild(tr);
   });
+
+  // --- 総計行を最後に追加 ---
+  const trTotal = document.createElement('tr');
+  const tdLabel = document.createElement('td');
+  tdLabel.textContent = '総計';
+  tdLabel.style.fontWeight = '700';
+
+  const tdValue = document.createElement('td');
+  tdValue.textContent = grand;
+
+  trTotal.appendChild(tdLabel);
+  trTotal.appendChild(tdValue);
+  DOM.totalsBody && DOM.totalsBody.appendChild(trTotal);
 }
 
 /* ===== イベント ===== */
