@@ -247,6 +247,7 @@ function renderTotals(){
 
   // --- 総計行を最後に追加 ---
   const trTotal = document.createElement('tr');
+  trTotal.className = 'total-row';           // ★ 罫線用のクラス
   const tdLabel = document.createElement('td');
   tdLabel.textContent = '総計';
   tdLabel.style.fontWeight = '700';
@@ -268,7 +269,14 @@ DOM.addBtn && DOM.addBtn.addEventListener('click',()=>{
   const qty=parseInt(DOM.qtyInput.value,10);
   if(!Number.isInteger(qty)||qty<1){ alert('個数は1以上の整数'); return; }
   manager.add(gid,rid,qty); refresh();
-});
+  /* ★ 追加後のリセット */
+  DOM.qtyInput && (DOM.qtyInput.value = '1');             // 個数を 1 に戻す
+  if (DOM.csSelName) DOM.csSelName.textContent = '--レシピを選択--';  // プレースホルダーへ
+  safeSetHTML(DOM.csSelThumbs, '');                       // 画像は空（表示もしない方針）
+  if (DOM.csSelected) DOM.csSelected.dataset.recipeId = '';// 未選択状態に戻す
+  renderRecipePreview(null);                               // プレビュー消去
+  closeMenu();                                             // 念のためドロップダウンを閉じる
+  });
 DOM.clearBtn && DOM.clearBtn.addEventListener('click',()=>{
   if(!confirm('登録済みをすべて削除しますか？')) return;
   manager.cart=[]; localStorage.removeItem('recipeCart'); refresh();
