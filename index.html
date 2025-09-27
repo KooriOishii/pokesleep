@@ -27,14 +27,15 @@
     }
 
     /* カスタムセレクト（PCは固定幅、SPはフル幅） */
-    .custom-select{ position:relative; max-width:100%; }
+    .custom-select { position: relative; max-width: 100%; }
+
     @media (min-width:769px){
-      .custom-select{ width:420px; }         /* ★PCはちょうど良い幅に固定 */
+      .custom-select { width: 420px; }   /* PCはちょうど良い幅に固定（お好みで変更） */
     }
     @media (max-width:768px){
-      .custom-select{ width:100%; }           /* ★SPは親幅いっぱい */
-      .cs-items{ left:0; right:0; width:100%; max-width:none; } /* ドロップダウンも幅合わせ */
-    } 
+      .custom-select { width: 100%; }    /* SPは親幅いっぱい */
+      .cs-items { left: 0; right: 0; width: 100%; max-width: none; } /* ドロップダウンも幅合わせ */
+    }
     .cs-selected{
       background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;
       display:flex;align-items:center;gap:10px;padding:8px;min-height:48px
@@ -205,14 +206,20 @@
       }
     }
 
+    /* セレクト直下のプレビュー */
+    .recipe-preview{ margin-top:8px; }
+    .recipe-preview .ing-stack{
+      display:flex; flex-direction:row; flex-wrap:wrap; gap:8px 10px;
+    }
+    .recipe-preview .ing-line{
+      display:flex; align-items:center; gap:6px;
+      padding:4px 6px; background:#f8f8fb; border-radius:8px;
+    }
+    .recipe-preview .ing-line img{ width:24px; height:24px; border-radius:6px; }
   </style>
 </head>
 <body>
   <h1>ポケスリ食材計算ツール</h1>
-    <p>ポケモンスリープの必要食材を計算できます。<br>
-       スマホからでも使いやすいものを目指しました。
-    </p>
-
   <div class="card controls">
     <div class="controls-row">
       <div class="ctrl-label">今週のレシピ</div>
@@ -224,11 +231,13 @@
       <div class="ctrl-body">
         <div id="recipeSelect" class="custom-select">
           <div class="cs-selected" id="csSelected" tabindex="0" aria-haspopup="listbox" aria-expanded="false">
-            <div class="name" id="csSelName">選択</div>
+            <div class="name" id="csSelName">--レシピを選択--</div>
             <div class="thumbs" id="csSelThumbs"></div>
           </div>
           <div class="cs-items cs-hide" id="csItems" role="listbox" aria-label="レシピ一覧"></div>
         </div>
+        <!-- 選択したレシピの「食材 × 個数」プレビュー -->
+        <div id="recipePreview" class="recipe-preview"></div>
       </div>
     </div>
 

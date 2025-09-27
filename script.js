@@ -1,16 +1,16 @@
 /* script.js（data.js を先に読み込む前提） */
 
-/* ====== モデル ====== */
+/* ===== モデル ===== */
 class Ingredient { constructor(id,name,img){ this.id=id; this.name=name; this.img=img; } }
 class Recipe {
   constructor(id,name,usage,partsOrdered){
     this.id=id; this.name=name; this.usage=usage;
-    this.partsOrdered=partsOrdered||[]; // [{idx,qty}] ← data.jsのparts順
+    this.partsOrdered=partsOrdered||[]; // [{idx,qty}]
   }
 }
 class Genre { constructor(id,name){ this.id=id; this.name=name; this.recipes=[]; } addRecipe(r){ this.recipes.push(r); } }
 
-/* ====== data.js → モデル化 ====== */
+/* ===== data.js → モデル化 ===== */
 const ingredients=(ingredientNames||[]).map((o,i)=>new Ingredient(i,o.name,o.img));
 const ingIndex=new Map(ingredients.map(i=>[i.name,i.id]));
 const genres=(genresList||[]).map((g,i)=>new Genre(i,g));
@@ -29,7 +29,7 @@ let ridSeq=0;
   g.addRecipe(new Recipe(ridSeq++, r.name, usage, partsOrdered));
 });
 
-/* ====== 状態管理 ====== */
+/* ===== 状態管理 ===== */
 class Manager{
   constructor(ingredients,genres){ this.ingredients=ingredients; this.genres=genres; this.cart=this._load(); }
   _save(){ localStorage.setItem('recipeCart', JSON.stringify(this.cart)); }
@@ -43,13 +43,14 @@ class Manager{
 }
 const manager=new Manager(ingredients,genres);
 
-/* ====== DOM ====== */
+/* ===== DOM ===== */
 const DOM={
   genreRadios:document.getElementById('genreRadios'),
   csSelected:document.getElementById('csSelected'),
   csSelThumbs:document.getElementById('csSelThumbs'),
   csSelName:document.getElementById('csSelName'),
   csItems:document.getElementById('csItems'),
+  recipePreview:document.getElementById('recipePreview'),
   qtyInput:document.getElementById('qtyInput'),
   addBtn:document.getElementById('addBtn'),
   clearBtn:document.getElementById('clearBtn'),
@@ -59,10 +60,24 @@ const DOM={
   totalsBody:document.querySelector('#totalsTable tbody')
 };
 
-/* ====== ジャンル（ラジオ生成） ====== */
+function ensureRecipePreviewSlot(){
+  if (DOM.recipePreview) return; // 既にあれば何もしない
+  const host = document.getElementById('recipeSelect');
+  if (!host) return;
+  const div = document.createElement('div');
+  div.id = 'recipePreview';
+  div.className = 'recipe-preview';
+  host.parentElement.insertBefore(div, host.nextSibling);
+  DOM.recipePreview = div; // DOM参照を更新
+}
+
+/* 安全に innerHTML をセット */
+function safeSetHTML(el, html){ if(!el) return; el.innerHTML = html; }
+
+/* ===== ジャンル（ラジオ生成） ===== */
 function populateGenres(){
   const wrap = DOM.genreRadios;
-  wrap.innerHTML = '';
+  safeSetHTML(wrap, '');
   manager.genres.forEach(g=>{
     const id = 'genre-' + g.id;
     const label = document.createElement('label');
@@ -73,112 +88,100 @@ function populateGenres(){
     input.id = id;
     label.appendChild(input);
     label.appendChild(document.createTextNode(g.name));
-    wrap.appendChild(label);
+    wrap && wrap.appendChild(label);
 
     input.addEventListener('change', ()=>{ populateRecipesCustom(Number(input.value)); });
   });
 
-  // 初期選択
+  // 初期選択（レシピは自動選択しない）
   if(manager.genres.length>0){
-    const first = wrap.querySelector('input[type=radio]');
+    const first = wrap ? wrap.querySelector('input[type=radio]') : null;
     if(first){ first.checked = true; populateRecipesCustom(Number(first.value)); }
   }
 }
 function currentGenreId(){
-  const checked = DOM.genreRadios.querySelector('input[type=radio]:checked');
+  const checked = DOM.genreRadios ? DOM.genreRadios.querySelector('input[type=radio]:checked') : null;
   return checked ? Number(checked.value) : null;
 }
 
-/* ====== レシピ（カスタムセレクト：左=名前 / 右=サムネ列） ====== */
-function buildThumbsByParts(recipe,size=20,radius=4){
+/* ===== レシピ：カスタムセレクト ===== */
+function buildThumbsByParts(recipe){
   const div=document.createElement('div'); div.className='thumbs';
   recipe.partsOrdered.forEach(({idx,qty})=>{
     const ing=manager.ingredients[idx];
     const img=document.createElement('img');
     img.src=ing.img; img.alt=ing.name; img.title=`${ing.name} × ${qty}`;
-    img.style.width=size+'px'; img.style.height=size+'px'; img.style.borderRadius=radius+'px';
     img.onerror=()=>{ img.style.opacity='0.35'; };
     div.appendChild(img);
   });
   return div;
 }
+
 function populateRecipesCustom(gid){
   const g=manager.genreById(gid);
-  DOM.csItems.innerHTML='';
-  if(!g){ DOM.csSelThumbs.innerHTML=''; DOM.csSelName.textContent='選択'; DOM.csSelected.dataset.recipeId=''; return; }
+  safeSetHTML(DOM.csItems, '');
+  if(!g){
+    safeSetHTML(DOM.csSelThumbs, '');
+    if(DOM.csSelName) DOM.csSelName.textContent='--レシピを選択--';
+    if(DOM.csSelected) DOM.csSelected.dataset.recipeId='';
+    renderRecipePreview(null);
+    return;
+  }
 
   g.recipes.forEach(r=>{
     const item=document.createElement('div'); item.className='cs-item';
     const name=document.createElement('div'); name.className='name'; name.textContent=r.name;
-    const thumbs=buildThumbsByParts(r,20,4);
+    const thumbs=buildThumbsByParts(r,16,3);
     item.appendChild(name); item.appendChild(thumbs);
-    item.addEventListener('click',()=>{
-      setSelectedRecipe(r);
-      closeMenu();
-    });
-    DOM.csItems.appendChild(item);
+    item.addEventListener('click',()=>{ setSelectedRecipe(r); closeMenu(); });
+    DOM.csItems && DOM.csItems.appendChild(item);
   });
 
-  const currentRid=Number(DOM.csSelected.dataset.recipeId);
-  const current=g.recipes.find(rr=>rr.id===currentRid)||g.recipes[0];
-  if(current) setSelectedRecipe(current);
+  // 自動選択しない（初期プレースホルダー）
+  safeSetHTML(DOM.csSelThumbs, '');
+  if(DOM.csSelName) DOM.csSelName.textContent='--レシピを選択--';
+  if(DOM.csSelected) DOM.csSelected.dataset.recipeId='';
+  renderRecipePreview(null);
 }
 function setSelectedRecipe(recipe){
-  DOM.csSelName.textContent=recipe.name;
-  DOM.csSelThumbs.innerHTML='';
-  DOM.csSelThumbs.appendChild(buildThumbsByParts(recipe,22,4));
-  DOM.csSelected.dataset.recipeId=recipe.id;
+  if(DOM.csSelName) DOM.csSelName.textContent=recipe.name;
+  safeSetHTML(DOM.csSelThumbs, '');
+  DOM.csSelThumbs && DOM.csSelThumbs.appendChild(buildThumbsByParts(recipe,18,4));
+  if(DOM.csSelected) DOM.csSelected.dataset.recipeId=recipe.id;
+  renderRecipePreview(recipe);
 }
 
-/* ====== ドロップダウン開閉（SPで幅フィット） ====== */
-function fitMenuWidthToParent(){
-  if(window.innerWidth<=768){
-    const root = document.getElementById('recipeSelect');
-    const w = getComputedStyle(root).width;
-    DOM.csItems.style.width = w;
-    DOM.csItems.style.maxWidth = w;
-  }else{
-    DOM.csItems.style.width = '';
-    DOM.csItems.style.maxWidth = '';
-  }
-}
-function isClosed(){ return DOM.csItems.classList.contains('cs-hide'); }
-function openMenu(){
-  DOM.csItems.classList.remove('cs-hide');
-  DOM.csSelected.setAttribute('aria-expanded','true');
-  fitMenuWidthToParent();
-}
-function closeMenu(){
-  DOM.csItems.classList.add('cs-hide');
-  DOM.csSelected.setAttribute('aria-expanded','false');
-}
-DOM.csSelected.addEventListener('click',()=>{ if(isClosed()) openMenu(); else closeMenu(); });
+/* ドロップダウン開閉 */
+function isClosed(){ return DOM.csItems ? DOM.csItems.classList.contains('cs-hide') : true; }
+function openMenu(){ if(!DOM.csItems||!DOM.csSelected) return; DOM.csItems.classList.remove('cs-hide'); DOM.csSelected.setAttribute('aria-expanded','true'); }
+function closeMenu(){ if(!DOM.csItems||!DOM.csSelected) return; DOM.csItems.classList.add('cs-hide'); DOM.csSelected.setAttribute('aria-expanded','false'); }
+DOM.csSelected && DOM.csSelected.addEventListener('click',()=>{ if(isClosed()) openMenu(); else closeMenu(); });
 document.addEventListener('click',(e)=>{ if(!e.target.closest('.custom-select')) closeMenu(); });
-window.addEventListener('resize', ()=>{ if(!isClosed()) fitMenuWidthToParent(); });
 
-/* ====== 登録済みリスト（qtyの右に縦積み：parts順） ====== */
+/* セレクト直下に「食材画像 × 個数」プレビュー */
+function renderRecipePreview(recipe){
+  if(!DOM.recipePreview) return;
+  safeSetHTML(DOM.recipePreview, '');
+  if(!recipe) return;
+  const stack=document.createElement('div');
+  stack.className='ing-stack';
+  recipe.partsOrdered.forEach(({idx,qty})=>{
+    stack.appendChild(makeIngLineByPart(idx, qty)); // 画像 + ×個数（名前なし）
+  });
+  DOM.recipePreview.appendChild(stack);
+}
+
+/* ===== 登録済みリスト ===== */
 function makeIngLineByPart(idx,count){
-  const line=document.createElement('div'); 
-  line.className='ing-line';
+  const line=document.createElement('div'); line.className='ing-line';
   const ing=manager.ingredients[idx];
-
-  const img=document.createElement('img');
-  img.src=ing.img; 
-  img.alt=ing.name;
-  img.onerror=()=>{ img.style.opacity='0.35'; };
-
-  const cnt=document.createElement('span');
-  cnt.className='cnt';
-  cnt.textContent=`×${count}`;
-
-  line.title=ing.name;
-  line.appendChild(img);
-  line.appendChild(cnt);
+  const img=document.createElement('img'); img.src=ing.img; img.alt=ing.name; img.onerror=()=>{ img.style.opacity='0.35'; };
+  const cnt=document.createElement('span'); cnt.className='cnt'; cnt.textContent=`×${count}`;
+  line.title=ing.name; line.appendChild(img); line.appendChild(cnt);
   return line;
 }
-
 function renderAddedList(){
-  DOM.addedListPC.innerHTML=''; DOM.addedListSP.innerHTML='';
+  safeSetHTML(DOM.addedListPC, ''); safeSetHTML(DOM.addedListSP, '');
   manager.cart.forEach((it,idx)=>{
     const g=manager.genreById(it.genreId); const r=manager.recipe(it.genreId,it.recipeId);
     if(!r) return;
@@ -208,15 +211,15 @@ function renderAddedList(){
       return row;
     };
 
-    DOM.addedListPC.appendChild(buildRow());
-    DOM.addedListSP.appendChild(buildRow());
+    DOM.addedListPC && DOM.addedListPC.appendChild(buildRow());
+    DOM.addedListSP && DOM.addedListSP.appendChild(buildRow());
   });
-  DOM.itemsCount.textContent=manager.cart.length;
+  if(DOM.itemsCount) DOM.itemsCount.textContent=String(manager.cart.length);
 }
 
-/* ====== 合計テーブル ====== */
+/* ===== 合計テーブル ===== */
 function renderTotals(){
-  DOM.totalsBody.innerHTML='';
+  safeSetHTML(DOM.totalsBody, '');
   const totals=manager.totals();
   totals.forEach((t,i)=>{
     if(t===0) return;
@@ -225,28 +228,30 @@ function renderTotals(){
     const img=document.createElement('img'); img.className='tot-img'; img.src=manager.ingredients[i].img; img.alt=manager.ingredients[i].name; img.onerror=()=>{ img.style.opacity='0.35'; };
     td1.appendChild(img); td1.appendChild(document.createTextNode(manager.ingredients[i].name));
     const td2=document.createElement('td'); td2.textContent=t;
-    tr.appendChild(td1); tr.appendChild(td2); DOM.totalsBody.appendChild(tr);
+    tr.appendChild(td1); tr.appendChild(td2); DOM.totalsBody && DOM.totalsBody.appendChild(tr);
   });
 }
 
-/* ====== イベント（追加・クリア） ====== */
-DOM.addBtn.addEventListener('click',()=>{
+/* ===== イベント ===== */
+DOM.addBtn && DOM.addBtn.addEventListener('click',()=>{
   const gid=currentGenreId();
-  const rid=Number(DOM.csSelected.dataset.recipeId);
+  const ridAttr = DOM.csSelected ? DOM.csSelected.dataset.recipeId : '';
+  if(gid==null || !ridAttr){ alert('レシピを選択してください'); return; }
+  const rid=Number(ridAttr);
   const qty=parseInt(DOM.qtyInput.value,10);
-  if(gid==null || isNaN(rid)){ alert('ジャンルとレシピを選択してください'); return; }
   if(!Number.isInteger(qty)||qty<1){ alert('個数は1以上の整数'); return; }
   manager.add(gid,rid,qty); refresh();
 });
-DOM.clearBtn.addEventListener('click',()=>{
+DOM.clearBtn && DOM.clearBtn.addEventListener('click',()=>{
   if(!confirm('登録済みをすべて削除しますか？')) return;
   manager.cart=[]; localStorage.removeItem('recipeCart'); refresh();
 });
 
-/* ====== 初期化 ====== */
+/* ===== 初期化 ===== */
 function refresh(){ renderAddedList(); renderTotals(); }
 function init(){
-  populateGenres();     // ジャンルを作ると同時に最初のレシピ一覧も構築される
+  ensureRecipePreviewSlot();       // ★ 念のため自動作成
+  populateGenres();
   refresh();
 }
 init();
