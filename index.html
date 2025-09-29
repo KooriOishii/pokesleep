@@ -4,281 +4,161 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ポケスリ食材計算ツール</title>
-  <style>
-    :root{font-family: system-ui,"Noto Sans JP",Meiryo,Arial; color:#111}
-    body{max-width:1100px;margin:20px auto;padding:18px;background:#f7f7fb;border-radius:10px;overflow-x:hidden;}
-    h1{font-size:1.3rem;margin-bottom:8px}
-    .card{background:#fff;padding:12px;border-radius:8px;border:1px solid #eee;margin-bottom:16px}
-    .small{font-size:13px;color:#666}
-    .flex-between{display:flex;justify-content:space-between;align-items:center}
-
-    .controls{display:flex;flex-direction:column;gap:14px}
-    .controls-row{display:flex;flex-direction:column;gap:6px}
-    .ctrl-label{font-weight:600}
-    .ctrl-body{display:block}
-
-    #genreRadios{display:flex;flex-wrap:wrap;gap:10px 16px}
-    #genreRadios label{display:flex;align-items:center;gap:6px;font-size:15px;cursor:pointer}
-    #genreRadios input[type=radio]{transform:scale(1.1)}
-
-    @media (max-width:768px){
-      #genreRadios{flex-direction:column;align-items:flex-start;gap:8px}
-      #genreRadios label{font-size:16px}
-    }
-
-    /* カスタムセレクト（PCは固定幅、SPはフル幅） */
-    .custom-select { position: relative; max-width: 100%; }
-
-    @media (min-width:769px){
-      .custom-select { width: 420px; }   /* PCはちょうど良い幅に固定（お好みで変更） */
-    }
-    @media (max-width:768px){
-      .custom-select { width: 100%; }    /* SPは親幅いっぱい */
-      .cs-items { left: 0; right: 0; width: 100%; max-width: none; } /* ドロップダウンも幅合わせ */
-    }
-    .cs-selected{
-      background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;
-      display:flex;align-items:center;gap:10px;padding:8px;min-height:48px
-    }
-    .cs-selected .name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .cs-selected .thumbs{width:110px;display:flex;flex-wrap:wrap;gap:4px;display:none;}
-    .cs-selected .thumbs img{width:22px;height:22px;object-fit:cover;border-radius:4px}
-    .cs-items{
-      position:absolute;left:0;right:0;top:100%;
-      background:#fff;border:1px solid #ddd;border-top:none;border-radius:0 0 6px 6px;
-      z-index:99;max-height:320px;overflow:auto
-    }
-    .cs-item{display:flex;align-items:flex-start;gap:10px;padding:8px;cursor:pointer}
-    .cs-item:hover{background:#f3f4f6}
-    .cs-item .name{flex:1;line-height:1.3;font-size:13px;}
-    .cs-item .thumbs{width:90px;display:flex;flex-wrap:wrap;gap:3px}
-    .cs-item .thumbs img{width:20px;height:20px;object-fit:cover;border-radius:4px}
-    .cs-hide{display:none}
-    
-
-    .qty-inline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .qty{width:52px;padding:6px;border-radius:6px;border:1px solid #ddd;text-align:center}
-
-    .added-row{display:flex;align-items:flex-start;border-bottom:1px solid #f0f0f0;padding:8px 6px;gap:12px}
-    .added-left{width:320px;min-width:190px;font-weight:700}
-    .added-center{flex:1;display:flex;align-items:flex-start;gap:12px}
-    .ing-stack{display:flex;flex-direction:column;gap:6px}
-    .ing-line{display:flex;align-items:center;gap:8px}
-    .ing-line img{width:28px;height:28px;object-fit:cover;border-radius:6px}
-    .ing-line .cnt{font-weight:700;font-size:12px}
-    .added-right{flex:0 0 80px;display:flex;justify-content:flex-end;align-items:flex-start}
-    .added-right button{padding:6px 8px}
-
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border:1px solid #eee;text-align:left;vertical-align:middle}
-    .tot-img{width:30px;height:30px;object-fit:cover;border-radius:6px;margin-right:8px;vertical-align:middle}
-
-    #addedListPC{display:block}
-    #addedListSP{display:none}
-    @media (max-width:768px){
-      #addedListPC{display:none}
-      #addedListSP{display:block}
-      .ing-stack{flex-direction:row;flex-wrap:wrap;gap:8px 10px}
-      .ing-line{padding:4px 6px;background:#f8f8fb;border-radius:8px}
-      .added-right{flex:1 1 100%;justify-content:flex-end;margin-top:6px}
-    }
-
-    /* スマホ版の登録済みレイアウト（レシピ名 → 下段で数量＋食材チップ） */
-    @media (max-width:768px){
-      .added-row{
-        flex-wrap: wrap;               /* 折り返し許可 */
-        align-items: stretch;
-      }
-      .added-left{
-        width:100%;
-        min-width:auto;
-        margin-bottom:6px;             /* レシピ名と下段の間に余白 */
-        overflow-wrap:anywhere;        /* 長い名前対策 */
-      }
-
-      /* 下段は「数量」+「食材チップ」の2カラムに */
-      .added-center{
-        width:100%;
-        display:grid;
-        grid-template-columns: auto 1fr;  /* 左=個数, 右=チップ */
-        align-items:start;
-        gap:8px 10px;
-        min-width:0;                      /* はみ出し防止 */
-      }
-      .added-center .qty{
-        width:64px;                       /* タップしやすい幅 */
-      }
-
-      /* 食材チップは横並びで折り返し */
-      .ing-stack{
-        display:flex;
-        flex-direction:row;
-        flex-wrap:wrap;
-        gap:8px 10px;                     /* 行間/列間 */
-        min-width:0;                      /* はみ出し防止 */
-      }
-      .ing-line{
-        display:flex;
-        align-items:center;
-        gap:6px;
-        padding:4px 6px;
-        background:#f8f8fb;               /* 視認性UP */
-        border-radius:8px;
-        max-width:100%;
-      }
-      .ing-line img{
-        width:24px; height:24px;          /* 少しだけ小ぶりに */
-        border-radius:6px;
-      }
-
-      /* 削除ボタンは下段右端（今のままでOK） */
-      .added-right{
-        flex:1 1 100%;
-        justify-content:flex-end;
-        margin-top:6px;
-      }
-    }
-
-    /* ===== PC専用の見た目調整 ===== */
-    @media (min-width:769px){
-      /* ページの横幅を少し狭くする（必要なら数値は調整OK） */
-      body{ max-width:900px; }  /* 例: 900px（以前は1100px） */
-
-      /* 登録済みレシピ：PCでも「レシピ名の後に改行」で下段に中身を置く */
-      .added-row{
-        flex-wrap: wrap;
-        align-items: stretch;
-      }
-      .added-left{
-        width:100%;
-        min-width:auto;
-        margin-bottom:6px;     /* レシピ名と下段の間に余白 */
-        overflow-wrap:anywhere;
-      }
-
-      /* 下段は「数量」＋「食材一覧」の2カラム */
-      .added-center{
-        width:100%;
-        display:grid;
-        grid-template-columns: auto 1fr; /* 左=個数, 右=食材一覧 */
-        align-items:start;
-        gap:8px 12px;
-        min-width:0;
-      }
-      .added-center .qty{ width:60px; }
-
-      /* 食材表示：画像＋名前＋×個数（横並びで折り返し） */
-      .ing-stack{
-        display:flex;
-        flex-direction:row;
-        flex-wrap:wrap;
-        gap:8px 12px;
-        min-width:0;
-      }
-      .ing-line{
-        display:flex;
-        align-items:center;
-        gap:8px;
-        padding:4px 6px;
-        background:#f8f8fb;
-        border-radius:8px;
-        max-width:100%;
-        white-space:nowrap;     /* 1食材は1行で見やすく */
-      }
-      .ing-line img{ width:24px; height:24px; border-radius:6px; }
-      .ing-line .nm{ font-size:14px; }    /* ★ 食材名（後述のJSで追加） */
-      .ing-line .cnt{ font-weight:700; font-size:12px; }
-    }
-
-    /* 食材合計テーブル：合計数を中央寄せ（PC/スマホ共通でOK） */
-    #totalsTable td:nth-child(2){ text-align:center; }
-
-    /* 合計テーブル：合計数ヘッダーも中央寄せ */
-    #totalsTable th:nth-child(2),
-    #totalsTable td:nth-child(2){
-      text-align:center;
-    }
-
-    /* PC版だけ合計テーブルを狭く中央寄せ */
-    @media (min-width:769px){
-      #totalsTable{
-        width:40%;              /* 幅を狭く（お好みで 50〜70% に調整） */
-        margin:0;          /* ページ左に寄せる */
-      }
-    }
-
-    /* セレクト直下のプレビュー */
-    .recipe-preview{ margin-top:8px; }
-    .recipe-preview .ing-stack{
-      display:flex; flex-direction:row; flex-wrap:wrap; gap:8px 10px;
-    }
-    .recipe-preview .ing-line{
-      display:flex; align-items:center; gap:6px;
-      padding:4px 6px; background:#f8f8fb; border-radius:8px;
-    }
-    .recipe-preview .ing-line img{ width:24px; height:24px; border-radius:6px; }
-
-    /* 総計行の上に罫線 */
-    #totalsTable tr.total-row td{
-      border-top: 2px solid #ddd;
-      font-weight: 700;
-    }
-    
-  </style>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <h1>ポケスリ食材計算ツール</h1>
-  <div class="card controls">
-    <div class="controls-row">
-      <div class="ctrl-label">今週のレシピ</div>
-      <div id="genreRadios" class="ctrl-body"></div>
-    </div>
 
-    <div class="controls-row">
-      <div class="ctrl-label">レシピ</div>
-      <div class="ctrl-body">
-        <div id="recipeSelect" class="custom-select">
-          <div class="cs-selected" id="csSelected" tabindex="0" aria-haspopup="listbox" aria-expanded="false">
-            <div class="name" id="csSelName">--レシピを選択--</div>
-            <div class="thumbs" id="csSelThumbs"></div>
-          </div>
-          <div class="cs-items cs-hide" id="csItems" role="listbox" aria-label="レシピ一覧"></div>
-        </div>
-        <!-- 選択したレシピの「食材 × 個数」プレビュー -->
-        <div id="recipePreview" class="recipe-preview"></div>
-      </div>
-    </div>
-
-    <div class="controls-row qty-row">
-      <div class="ctrl-label">個数</div>
-      <div class="ctrl-body qty-inline">
-        <input id="qtyInput" type="number" min="1" value="1" class="qty" />
-        <button id="addBtn">追加</button>
-        <button id="clearBtn" class="ghost">全クリア</button>
-      </div>
-    </div>
+  <!-- コントロール -->
+<div class="card controls">
+  <div class="controls-row">
+    <label>今週のレシピ</label>
+    <div id="genreRadios"></div>
   </div>
 
+  <div class="controls-row">
+    <label>レシピ
+      <div id="recipeSelect" class="custom-select">
+        <div class="cs-selected" id="csSelected" tabindex="0" aria-haspopup="listbox" aria-expanded="false">
+          <div class="name" id="csSelName">--レシピを選択--</div>
+          <div class="thumbs" id="csSelThumbs"></div>
+        </div>
+        <div class="cs-items cs-hide" id="csItems" role="listbox" aria-label="レシピ一覧"></div>
+      </div>
+    </label>
+    <div id="recipePreview" class="recipe-preview"></div>
+  </div>
+
+  <div class="controls-row">
+    <label>個数
+      <div class="inline">
+        <input id="qtyInput" type="number" min="1" value="1" class="qty" />
+        <button id="addBtn">追加</button>
+      </div>
+    </label>
+  </div>
+</div>
+
+  <!-- 登録済みレシピ -->
   <div class="card">
     <div class="flex-between">
       <h3 style="margin:0">追加済みレシピ</h3>
-      <!-- <div class="small">合計アイテム: <span id="itemsCount">0</span></div> -->
+      <!-- ★ 右側の表記を削除し、全削除ボタンをここに配置 -->
+      <button id="clearBtn" class="ghost">全削除</button>
     </div>
     <div id="addedListPC" class="list" style="margin-top:8px"></div>
     <div id="addedListSP" class="list" style="margin-top:8px"></div>
   </div>
 
-  <div class="card">
-    <h3 style="margin-top:0">食材合計</h3>
-    <div style="overflow:auto">
-      <table id="totalsTable">
-        <thead><tr><th>食材名</th><th>合計数</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+<!-- 食材合計 -->
+<div class="card">
+  <div class="flex-between">
+    <h3 style="margin:0">食材合計</h3>
+    <!-- 右上：所持数リセット -->
+    <button id="resetStockBtn" class="ghost">所持数リセット</button>
   </div>
 
-  <script src="data.js"></script>
-  <script src="script.js"></script>
+  <!-- 置換後：ツールバーを左右に分け、左を縦積み -->
+  <div class="cam-left">
+    <div class="cam-top-row">
+      <button id="toggleOcrBtn" class="icon-btn" aria-expanded="false">📷</button>
+      <button id="gridDefaultsBtn" class="icon-btn" title="既定値に戻す" style="display:none;">↺</button>
+    </div>
+    <p id="cameraHelp" class="camera-help"><small>
+      食材バッグのスクショ画像から食材を読み取ります。(β)<br>
+      一番下までスクロールした画像を用意してください。<br>
+      (Galaxy S24のみ動作確認済み)
+      </small>
+    </p>
+  </div>
+
+  <!-- ★ カメラで開くOCRインラインパネル（テーブルの“上”） -->
+  <div id="ocrPanel" class="ocr-inline" style="display:none">
+    <div class="controls-row" style="flex-wrap:wrap">
+      <!-- ボタン範囲限定のドロップゾーン（単一IDに統一） -->
+      <div id="screenshotDrop" class="drop-button" role="button" tabindex="0"
+          aria-label="スクショを選択（クリック or ドロップ）">
+        <!-- ※ 視覚的なテキストは出さず、アクセシビリティは aria-label で担保 -->
+        <input id="invImage" type="file" accept="image/*" />
+      </div>
+      <div style="flex-basis:100%;height:0"></div>
+      <!-- 置換後：行数セグメント＋読取、裏で #ocrRows を保持 -->
+      <div class="ocr-rows">
+        <div class="seg" id="ocrRowSeg">
+          <button type="button" class="seg-btn" data-val="1">1</button>
+          <button type="button" class="seg-btn is-active" data-val="2">2</button>
+          <button type="button" class="seg-btn" data-val="3">3</button>
+          <button type="button" class="seg-btn" data-val="4">4</button>
+        </div>
+        <span class="small unit">(行)</span>
+
+        <!-- 垂直オフセット（箱全体の上下移動。箱サイズは固定） -->
+        <div class="field">
+          <label for="ocrYOffset" class="visually-hidden">(垂直)</label>
+          <div class="range">
+            <input id="ocrYOffset" type="range" min="-200" max="200" step="1" value="0" />
+            <span class="mini-label-inline">(垂直)</span>
+            <span id="ocrYOffsetVal">0</span>
+          </div>
+        </div>
+
+        <label for="ocrGapX" class="visually-hidden">(間隔)</label>
+          <div class="range">
+            <input id="ocrGapX" type="range" min="10" max="60" step="1" value="24" />
+            <span class="mini-label-inline">(間隔)</span>
+            <output id="ocrGapXVal" class="small">24px</output>
+          </div>
+        </label>
+        <!-- ★ この1行をボタンの直前に追加 -->
+        <div class="flex-br"></div>
+
+        <button id="gridOcrBtn">読取</button>
+
+
+        <!-- 裏方：ocr.js が読む値はここ（hidden） -->
+        <input id="ocrRows" type="number" value="4" min="1" max="4" hidden />
+      </div>
+
+      <div id="ocrStatus" class="small" style="align-self:center;color:#666"></div>
+    </div>
+
+    <canvas id="gridPreview" style="display:none"></canvas>
+    <div id="tileThumbs" style="display:flex; gap:6px; flex-wrap:nowrap; overflow-x:auto; margin-top:8px"></div>
+    <div id="ocrResult" style="margin-top:8px"></div>
+  </div>
+
+  <!-- テーブル本体 -->
+  <div id="totalsWrap" style="overflow:auto">
+      <table id="totalsTable">
+      <colgroup>
+        <col>
+        <col class="num-col">
+        <col class="num-col">
+        <col class="num-col">
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="th-ing">
+            <div class="th-stack">
+              <button id="toggleNameBtn" class="icon-btn tiny" title="食材名の表示/非表示">＋</button>
+              <span>食材</span>
+            </div>
+          </th>
+          <th style="text-align:center">必要数</th>
+          <th style="text-align:center">所持数</th>
+          <th style="text-align:center">不足数</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+  <!-- スクリプト -->
+  <script src="js/data.js"></script>
+  <script src="https://unpkg.com/tesseract.js@5.0.2/dist/tesseract.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/ocr.js"></script>
 </body>
 </html>
