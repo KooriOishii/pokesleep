@@ -22,6 +22,7 @@
     { "name": "ワカクサ大豆", "img": "images/ingredients/greengrasssoybeans.png", "aliases": ["大豆"] },
     { "name": "ワカクサコーン", "img": "images/ingredients/greengrasscorn.png", "aliases": ["コーン"] },
     { "name": "めざましコーヒー", "img": "images/ingredients/wakeupcoffee.png", "aliases": ["めざまし", "コーヒー"] }
+    { "name": "ずっしりかぼちゃ", "aliases": ["ずっしり", "かぼちゃ"] }
   ],
   "groupOrders": {
     "C": [
@@ -172,3 +173,4 @@
     { "id": "とくせんリンゴカレー", "slug": "a-21", "name": "とくせんリンゴカレー", "group": "A", "per": { "とくせんリンゴ": 7 } }
   ]
 }
+
