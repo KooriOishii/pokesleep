@@ -372,7 +372,7 @@
 
     function getRecipeListByGroup(group) {
       const list = DATASET.recipes.filter(r => (r.group || 'A') === group);
-      list.sort((a,b) => (a.slug||a.id).localeCompare(b.slug||b.id, 'ja'));
+      list.sort((a,b) => (b.slug||b.id).localeCompare(a.slug||a.id, 'ja'));
       return list;
     }
 
