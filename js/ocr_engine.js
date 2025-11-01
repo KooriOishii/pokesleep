@@ -8,7 +8,7 @@ function normalizeKey(s){
     .replace(/[\s\u3000]/g, '')
     .replace(/[×✕xX＊*·・]/g, 'x')
     .replace(/[()（）\[\]【】]/g, '')
-    .replace(/[A-Za-z0-9Ａ-Ｚａ-ｚ０-９]/g, '') // ← 英数字を削除（半角＋全角対応）
+    .replace(/[A-Za-z0-9_＿Ａ-Ｚａ-ｚ０-９①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]/g, '') // ← 英数字を削除（半角＋全角対応）
     .trim();
 }
 
@@ -222,6 +222,7 @@ async function recognizeTile(tileCanvas, up = 1.0){
       const rn = (rawName  || '').replace(/\n/g, ' ');
       const rd = (rawDigit || '').replace(/\n/g, ' ');
       console.log(`[OCR][RAW] scale=${up}  name="${rn}"  digit="${rd}"`);
+      console.log(`[OCR][NORM] nameNoSp="${nameNoSp}"  digitNoSp="${digitNoSp}"`);
     } catch (_) {}
   }
 
