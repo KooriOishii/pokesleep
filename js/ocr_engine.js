@@ -144,7 +144,7 @@ async function ensureTesseract(){
     // 日本語（名前）— 単一行
     OCR.W_NAME = await createWorker('jpn', undefined, OPTS);
     await OCR.W_NAME.setParameters({
-      tessedit_char_blacklist: '0123456789',
+      tessedit_char_blacklist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
       tessedit_pageseg_mode: 7
     });
 

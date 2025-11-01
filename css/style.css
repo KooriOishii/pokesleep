@@ -88,8 +88,30 @@
 /* 最有力ラインは非表示（要望により） */
 #bestLine { display: none !important; }
 
-/* デバッグトグルを非表示 */
-#debugToggle,
-label[for="debugToggle"] {
-  display: none !important;
+/* === Confirm Panel responsive fixes (wrap & overflow control) === */
+#confirmPanel .list-group{
+  max-height:50vh;
+  overflow:auto;
+}
+#confirmPanel .list-group-item{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  flex-wrap:wrap;
+}
+#confirmPanel .list-group-item .tile-thumb{
+  flex:0 0 auto;
+}
+#confirmPanel .list-group-item .form-select{
+  flex:1 1 auto;
+  min-width:0;
+  max-width:100%;
+}
+#confirmPanel .list-group-item input[type=number]{
+  flex:0 0 6ch;
+  min-width:0;
+}
+#confirmPanel .card{
+  max-width:100%;
+  overflow:hidden;
 }
