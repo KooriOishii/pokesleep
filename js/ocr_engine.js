@@ -8,6 +8,7 @@ function normalizeKey(s){
     .replace(/[\s\u3000]/g, '')
     .replace(/[×✕xX＊*·・]/g, 'x')
     .replace(/[()（）\[\]【】]/g, '')
+    .replace(/[A-Za-z0-9Ａ-Ｚａ-ｚ０-９]/g, '') // ← 英数字を削除（半角＋全角対応）
     .trim();
 }
 
@@ -144,7 +145,7 @@ async function ensureTesseract(){
     // 日本語（名前）— 単一行
     OCR.W_NAME = await createWorker('jpn', undefined, OPTS);
     await OCR.W_NAME.setParameters({
-      tessedit_char_blacklist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
+      tessedit_char_blacklist: '0123456789',
       tessedit_pageseg_mode: 7
     });
 

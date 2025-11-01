@@ -73,7 +73,7 @@
         if (OCR.status) OCR.status.textContent = '';
       });
 
-      debugToggle.addEventListener('change', ()=>{ OCR.debug = !!debugToggle.checked; if (!OCR.debug) setDebugLines(''); else setDebugLines('(ON)'); });
+      if (debugToggle) { debugToggle.addEventListener('change', ()=>{ OCR.debug = !!debugToggle.checked; if (!OCR.debug) setDebugLines(''); else setDebugLines('(ON)'); }); }
 
       readBtn.addEventListener('click', async () => {
         try{
