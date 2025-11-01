@@ -1,382 +1,95 @@
-:root{font-family: system-ui,"Noto Sans JP",Meiryo,Arial; color:#111}
-body{max-width:1100px;margin:20px auto;padding:18px;background:#f7f7fb;border-radius:10px;overflow-x:hidden}
-h1{font-size:1.3rem;margin:0 0 8px}
-.card{background:#fff;padding:12px;border-radius:8px;border:1px solid #eee;margin-bottom:12px}
-.small{font-size:13px;color:#666}
-.flex-between{display:flex;justify-content:space-between;align-items:center}
+    /* レイアウト調整（モバイル→縦、lg以上→左右） */
+    .sticky-col { position: sticky; top: 1rem; }
+    .qty-input { text-align: center; }
+    .w-9ch { width: 9ch; }
+    .w-6ch { width: 6ch; } /* G3 所持入力を狭く */
+    .table-sm td, .table-sm th { vertical-align: middle; }
+    #totalTable th { white-space: nowrap; } /* ヘッダー折返し防止 */
+    .empty-hint { color: #6c757d; }
 
-/* レイアウト */
-.controls{display:flex;flex-direction:column;gap:12px}
-.controls-row{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
-.controls-row label{display:flex;flex-direction:column;gap:6px}
-/* 値ボックスの右側に小さな表示ラベルを出す */
-.value-box{display:flex;align-items:center;gap:6px;margin-left:auto}
-.mini-label{font-size:12px;color:#666}
+    /* 数値入力のスピントグル非表示（全体） */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
 
-/* 左側の元ラベルはUI上は隠す（スクリーンリーダー配慮版） */
-.visually-hidden{
-  position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;
-  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+    /* ステッパー幅：統一（グループ1/2共通） */
+    .stepper-compact { width: 130px; max-width: 130px; }
+
+    /* ステッパーボタン幅固定（端末差を吸収） */
+    .btn-step { width: 36px; padding-left: 0; padding-right: 0; display: inline-flex; justify-content: center; align-items: center; }
+
+    /* --- 食材画像UI --- */
+    .ing-img { display: inline-block; object-fit: contain; border-radius: .35rem; background-color: #f8f9fa; }
+    .ing-32 { width: 32px; height: 32px; }
+    .ing-28 { width: 28px; height: 28px; }
+
+    .ing-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .2rem; flex: 0 0 auto; }
+    .ing-count { font-variant-numeric: tabular-nums; }
+
+    .ing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem .75rem; }
+    .ing-grid-item { display: inline-flex; align-items: center; gap: .35rem; min-width: 0; }
+
+    .ing-label-minitext { font-size: 10px; color: #6c757d; white-space: nowrap; }
+
+    /* G3：2〜4列（必要・所持・不足）中央寄せ */
+    #totalTable th:nth-child(2),
+    #totalTable th:nth-child(3),
+    #totalTable th:nth-child(4),
+    #totalTable td:nth-child(2),
+    #totalTable td:nth-child(3),
+    #totalTable td:nth-child(4) { text-align: center; }
+    #totalTable td:nth-child(3) .form-control { margin-left: auto; margin-right: auto; text-align: center; }
+
+    /* カメラUI */
+    .camera-stack { display: grid; gap: .5rem; }
+
+    /* G1プレビュー：常に横一行（横スクロール） */
+    #g1Preview { display: flex; gap: .5rem; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+
+    /* OCRプレビュー領域（初期は非表示） */
+    #gridPreview { display: flex; flex-direction: column; gap: .5rem; border: 1px dashed #dee2e6; border-radius: .5rem; background: #f8f9fa; padding: .5rem; }
+    #tileThumbs { display: flex; gap: 6px; overflow-x: auto; white-space: nowrap; min-height: 64px; }
+    #gridPreview, #gridPreview * { cursor: default; }
+
+    /* バッジ（やわらか色） */
+    .badge-soft { color: #0c5460; background: #e2f3f5; border: 1px solid #bde1e6; }
+
+    /* 確認パネル */
+    #confirmPanel .card-title small { color: #6c757d; }
+    .tile-thumb { width: 40px; height: auto; border: 1px solid #eee; border-radius: 4px; }
+
+    /* トースト通知 */
+    .toast-container { position: fixed; inset: auto 1rem 1rem auto; z-index: 1080; }
+
+    /* デバッグ領域（既定OFF） */
+    #ocrDebug { display: none; }
+
+/* --- Preview in-card behavior --- */
+#gridPreview {
+  max-width: 100%;
+  overflow: hidden;          /* カード外にはみ出さない */
+  padding: .5rem;
+}
+#tileThumbs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;         /* 横一列固定 */
+  overflow-x: auto;          /* 横スクロール */
+  overflow-y: hidden;        /* 縦スクロールは禁止 */
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+.tile-thumb {
+  flex: 0 0 auto;            /* 固定幅で並べる */
+  width: 40px;
+  height: auto;
 }
 
-/* 既存のフィールド構造に合わせて適用（クラス名は一例） */
-.field-y > label, .field-gap > label{ display:none; } /* UI上は非表示にする場合 */
+/* 最有力ラインは非表示（要望により） */
+#bestLine { display: none !important; }
 
-/* ラジオ（ジャンル） */
-#genreRadios{display:flex;gap:10px;flex-wrap:wrap}
-#genreRadios label{display:flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #e8e8e8;border-radius:8px;background:#fafafa}
-#genreRadios input{accent-color:#2563eb}
-
-/* 共通UI */
-select,input[type=number]{padding:8px;border-radius:6px;border:1px solid #ddd;background:#fff}
-input[type=number]{width:76px}
-.qty{width:64px;padding:6px;border-radius:6px;border:1px solid #ddd;text-align:center}
-button{padding:8px 12px;border-radius:6px;border:0;background:#2563eb;color:#fff;cursor:pointer}
-button.ghost{background:#f3f4f6;color:#111;border:1px solid #e6e6e6}
-
-/* カスタムセレクト */
-.custom-select{position:relative;max-width:100%}
-.cs-selected{background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px;min-height:48px}
-.cs-selected .name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
-.cs-selected .thumbs{width:120px;display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-start}
-.cs-selected .thumbs img{width:18px;height:18px;object-fit:cover;border-radius:4px}
-.cs-items{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-top:none;border-radius:0 0 6px 6px;z-index:99;max-height:320px;overflow:auto}
-.cs-item{display:flex;align-items:flex-start;gap:8px;padding:8px;cursor:pointer}
-.cs-item:hover{background:#f3f4f6}
-.cs-item .name{flex:1;line-height:1.3;font-size:14px}
-.cs-item .thumbs{width:120px;display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-start}
-.cs-item .thumbs img{width:16px;height:16px;object-fit:cover;border-radius:3px}
-.cs-hide{display:none}
-
-/* セレクト直下プレビュー */
-.recipe-preview{margin-top:6px; flex: 1 0 100%}
-.ing-stack{display:flex;flex-wrap:wrap;gap:8px}
-.ing-line{display:flex;align-items:center;gap:6px}
-.ing-line img{width:28px;height:28px;object-fit:cover;border-radius:6px}
-.ing-line .cnt{font-weight:700;font-size:12px}
-
-/* 登録済みリスト */
-.added-row{display:flex;align-items:flex-start;border-bottom:1px solid #f0f0f0;padding:8px 6px;gap:12px}
-.added-left{width:320px;min-width:190px;font-weight:700}
-.added-center{flex:1;display:flex;align-items:flex-start;gap:12px}
-.added-right{flex:0 0 80px;display:flex;justify-content:flex-end;align-items:flex-start}
-.added-right button{padding:6px 8px}
-
-/* 合計テーブル */
-table{width:100%;border-collapse:collapse}
-th,td{padding:8px;border:1px solid #eee;text-align:left;vertical-align:middle}
-.tot-img{width:30px;height:30px;object-fit:cover;border-radius:6px;margin-right:8px;vertical-align:middle}
-.stock-input{width:30px;padding:6px;border-radius:6px;border:1px solid #ddd;text-align:center}
-.total-row td{font-weight:700;border-top:2px solid #444}
-
-/* PC/SP 切替 */
-#addedListPC{display:block}
-#addedListSP{display:none}
-@media (min-width:769px){.custom-select{width:420px}}
-@media (max-width:768px){
-  #addedListPC{display:none}
-  #addedListSP{display:block}
-  .cs-items{left:0;right:0;width:100%;max-width:none}
-  .added-row{flex-wrap:wrap;align-items:stretch}
-  .added-left{width:100%;min-width:auto;margin-bottom:6px;overflow-wrap:anywhere}
-  .added-center{width:100%;gap:10px}
-  .ing-stack{flex:1;flex-direction:row;flex-wrap:wrap;gap:8px 10px}
-  .ing-line{padding:4px 6px;background:#f8f8fb;border-radius:8px}
-  .added-right{flex:1 1 100%;justify-content:flex-end;margin-top:6px}
-}
-
-/* OCRパネル / 画像サムネ */
-#gridPreview{display:none !important;}
-details{display:none !important;}
-#tileThumbs{
-  display:flex !important;
-  flex-wrap:nowrap;
-  overflow-x:auto;
-  overflow-y:hidden;
-  gap:6px;
-  max-width:100%;
-  padding:4px 2px;
-  -webkit-overflow-scrolling:touch;
-  scroll-snap-type:x proximity;
-}
-#tileThumbs img{
-  width:40px;
-  height:auto;
-  flex:0 0 auto;
-  border:1px solid #eee;
-  border-radius:4px;
-  scroll-snap-align:start;
-}
-
-/* ラジオボタンの前に改行（ラベルの下に出す） */
-#genreRadios{
-  flex-basis:100%;
-  margin-top:6px;
-}
-
-/* 小さめアイコンボタン */
-.icon-btn{
-  display:inline-flex;justify-content:center;align-items:center;
-  width:28px;height:28px;border-radius:6px;border:1px solid #e6e6e6;
-  background:#f3f4f6;color:#111;cursor:pointer;font-size:16px;line-height:1;
-}
-.icon-btn:hover{background:#e9eaee}
-.icon-btn.camera{width:32px;height:32px}
-
-/* 入力の右にボタンを横並び */
-.inline{display:flex;flex-wrap:nowrap;align-items:center;gap:8px}
-
-/* テーブルの“上”に置く操作ボタン行（重複定義を統合） */
-.actions{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  margin:6px 0 8px;
-}
-
-/* 数値3列（必要数・所持数・不足数）を同幅に */
-#totalsTable col.num-col{width:100px}
-
-/* 所持数入力（3桁＋余白）を確実に狭くする */
-#totalsTable input.stock-input{
-  width:4.8ch !important;
-  padding:4px 6px;
-  text-align:center;
-  box-sizing:border-box;
-}
-
-/* スピナー非表示（共通） */
-#totalsTable input.stock-input::-webkit-outer-spin-button,
-#totalsTable input.stock-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
-#totalsTable input.stock-input{ -moz-appearance:textfield; }
-
-.th-ing .th-stack{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
-.icon-btn.tiny{width:24px;height:24px;font-size:14px}
-
-/* 食材名は初期は非表示（テーブルに .show-names が付いたら表示） */
-#totalsTable .ing-name{display:none;margin-left:8px}
-#totalsTable.show-names .ing-name{display:inline}
-
-/* すべての数値入力の幅 & スピン非表示を統一 */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
-input[type="number"]{ -moz-appearance:textfield; }
-input[type="number"]{
-  width:4.8ch !important;
-  text-align:center;
-  box-sizing:border-box;
-}
-
-/* スマホ時の表全体調整 */
-@media (max-width:600px){
-  #totalsWrap{ overflow-x:auto; }
-  #totalsTable{ min-width:280px; }
-  #totalsTable col:first-child{ width:56px; }
-  #totalsTable col.num-col{ width:80px; }
-  #totalsWrap.wide #totalsTable{ min-width:420px; }
-  #totalsTable.show-names col:first-child{ width:180px; }
-  #totalsTable .tot-img{ margin-right:4px; }
-}
-
-/* レシピセレクタの表示名を大きく */
-.custom-select .cs-selected .name{ font-size:16px; }
-@media (min-width:960px){
-  .custom-select .cs-selected .name{ font-size:18px; }
-}
-
-/* ドロップダウン内の候補名も少し大きく */
-.custom-select .cs-item .name{ font-size:15px; }
-@media (min-width:960px){
-  .custom-select .cs-item .name{ font-size:16px; }
-}
-
-/* OCR 行数セグメント */
-/* 読取ボタンをスライダー群の“下段”に強制配置 */
-.ocr-rows #gridOcrBtn{
-  width: auto;        /* ボタン幅は自動 */
-  margin-top: 8px;    /* スライダーとの間隔を少しあける */
-}
-.ocr-rows{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.ocr-rows .small{ color:#555 }
-.seg{ display:inline-flex; border:1px solid #e6e6e6; border-radius:8px; overflow:hidden; }
-.seg-btn{ padding:6px 10px; background:#f7f7fb; border:0; cursor:pointer; line-height:1; }
-.seg-btn + .seg-btn{ border-left:1px solid #e6e6e6; }
-.seg-btn.is-active{ background:#2563eb; color:#fff; }
-.seg-btn:focus{ outline:2px solid #9ab6ff; outline-offset:-2px; }
-#ocrPanel .controls-row{ gap:4px; }
-/* OCRパネル内では、フィールド/ラベルは縦積みを基本にする */
-#ocrPanel .controls-row .field,
-#ocrPanel .controls-row label{
-  flex-basis:100%;      /* ← 1列レイアウトを強制 */
-}
-/* OCR 行数セグメント：行頭に配置し、その下に他要素を縦積み */
-.ocr-rows{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  margin-top:4px;
-  flex-basis:100%;      /* ← 行頭に改行させる */
-}
-.ocr-rows .unit{ margin-left:2px; }
-.seg-btn{ padding:5px 9px; }
-.seg .seg-btn{ background:#f7f7fb; color:#000 !important; }
-.seg .seg-btn.is-active{ background:#2563eb; color:#fff !important; }
-.seg .seg-btn:hover:not(.is-active){ background:#eceff4; }
-.ocr-rows .unit{ font-size:16px; line-height:1; }
-
-/* 在庫セルのワンショット点灯 */
-@keyframes flash { 0%{background:#fff7bd} 100%{background:transparent} }
-.flash { animation: flash 900ms ease-out; }
-
-/* ↺ ボタン */
-#undoOcrBtn{ padding:6px 10px; }
-.actions button[disabled]{ opacity:0.5; cursor:not-allowed; }
-.hidden{ display:none !important; }
-.icon-btn.undo{ width:32px; height:32px; }
-
-/* 追加：ステッパーは共通buttonの青スタイルを無効化して小さく */
-.numwrap .step-btn{
-  width:24px;
-  height:24px;
-  padding:0;
-  line-height:1;
-  font-size:14px;
-  border:1px solid #e6e6e6;
-  border-radius:6px;
-  background:#f3f4f6;
-  color:#111;
-  cursor:pointer;
-}
-.numwrap .step-btn:hover{ background:#e9eaee }
-/* 共通buttonに負けないように、もう一段の指定（保険） */
-button.step-btn{ background:#f3f4f6 !important; color:#111 !important; border:1px solid #e6e6e6 !important; }
-
-/* 追加：PCだけのテーブル幅・食材列幅（名前非表示時は細く、表示時は広く） */
-@media (min-width: 960px){
-  /* デフォ（名前非表示）：画像が見える最小幅に */
-  #totalsWrap{
-    max-width: 360px;
-    margin: 0;
-  }
-  #totalsTable col:first-child{ width: 64px; } /* 30px画像＋余白でジャスト */
-
-  /* 名前表示（＋ボタンで展開時）：少し広げる */
-  #totalsWrap.wide{ max-width: 470px; }
-  #totalsTable.show-names col:first-child{ width: 170px; }
-}
-
-/* ステッパーのサイズを少し小さく、間隔を広げる */
-.numwrap{
-  gap: 10px;              /* ← 6px → 10px（離す） */
-}
-.numwrap .step-btn{
-  width: 22px;            /* ← 24px → 22px（気持ち小さく） */
-  height: 22px;
-  font-size: 13px;        /* 文字も少しだけ小さく */
-  padding: 0;             /* 余白を確実にゼロに */
-  line-height: 1;
-}
-
-/* 左の「−」ボタンと入力の間 */
-.numwrap .step-btn:first-child {
-  margin-right: 6px;  /* ← 好みで6〜10pxに調整 */
-}
-
-/* 右の「＋」ボタンと入力の間 */
-.numwrap .step-btn:last-child {
-  margin-left: 6px;
-}
-
-/* レンジの行 */
-.range{ display:flex; align-items:center; gap:10px; }
-.range input[type="range"]{ width:200px; }
-
-/* 小さな数値表示（流用OK） */
-.range output.small{ min-width:48px; text-align:right; }
-
-.icon-btn {
-  display:inline-flex; align-items:center; justify-content:center;
-  width:32px; height:32px; border-radius:8px;
-  border:1px solid #e0e0e6; background:#fff; cursor:pointer;
-}
-.icon-btn.ghost { background:#fff; border-color:#e6e6ee; }
-.icon-btn:hover { background:#f5f5fb; }
-.icon-btn svg { width:18px; height:18px; }
-
-/* スライダー右に置く小さめラベル */
-.mini-label-inline{
-  margin-left: 8px;
-  font-size: 12px;
-  color: #666;
-}
-
-/* 右側の数値表示はUI上は隠す（将来復活できるようDOMは残す） */
-#ocrYOffsetVal,
-#ocrGapXVal{
+/* デバッグトグルを非表示 */
+#debugToggle,
+label[for="debugToggle"] {
   display: none !important;
 }
-
-/* もし値表示用のラッパがある場合（例：.value-box）もまとめて隠す */
-.value-box{
-  display: none !important;
-}
-
-.visually-hidden{
-  position: absolute !important;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0,0,0,0);
-  white-space: nowrap; border: 0;
-}
-
-/* フレックス行を確実に折り返すためのブレーカー */
-.flex-br{
-  flex-basis: 100%;
-  height: 0;
-}
-
-/* 少し上に余白を追加したい場合（任意、好みで調整） */
-#ocrBtn, #gridOcrBtn{
-  margin-top: 6px;
-}
-
-/* ラベル文言だけ隠す（スクリーンリーダー向けに残す） */
-.visually-hidden{
-  position:absolute !important;
-  width:1px;height:1px;
-  padding:0;margin:-1px;
-  overflow:hidden;clip:rect(0,0,0,0);
-  white-space:nowrap;border:0;
-}
-
-/* ボタン限定のドロップゾーン */
-.drop-button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border:1px dashed transparent; /* 通常は目立たせない */
-  border-radius:8px;
-  padding:2px;                   /* 入れ物として少しだけ余白 */
-}
-
-/* ドラッグが乗った時だけ強調 */
-.drop-button.drag-over{
-  border-color:#8aa3ff;
-  background:rgba(138,163,255,.08);
-}
-
-.camera-help {
-  font-size: 0.9rem;
-  color: #555;
-  margin: 6px 0 12px;
-}
-
-.cam-bar{
-  display:flex;
-  align-items:flex-start;
-  gap:12px;
-}
-
-.cam-left{ display:flex; flex-direction:column; gap:6px; }
-.cam-top-row{ display:flex; align-items:center; gap:8px; }
-.camera-help{ font-size:.9rem; color:#555; margin:0; line-height:1.4; }

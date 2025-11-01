@@ -1,143 +1,88 @@
+const DEFAULT_DATA = {
+      weeklyGroups: [
+        { id: 'A', label: 'カレー' },
+        { id: 'B', label: 'サラダ' },
+        { id: 'C', label: 'デザート' }
+      ],
+      recipes: [
+        { id: 'とくせんリンゴカレー', name: 'とくせんリンゴカレー', group: 'A', slug: 'a-fallback-01', per: { 'とくせんリンゴ': 7 } }
+      ],
+      ingredients: [
+        { name: 'とくせんリンゴ', img: 'images/ingredients/apple.png', aliases: [] }
+      ]
+    };
 
-/* -------------------------------------------------- */
-/* data.js (生データ：ユーザー提供) */
-/* -------------------------------------------------- */
+    let DATASET = null;
+    const DATASET_INDEX = { bySlug: Object.create(null), byId: Object.create(null) };
 
-// 食材リスト
-/* -------------------------------------------------- */
-/* data.js（aliases: 変換なし／英語なし） */
-/* -------------------------------------------------- */
-const ingredientNames = [
-  { name: 'ふといながねぎ', img: 'images/ingredients/largeleek.png',
-    aliases: ['ふとい','ながねぎ','ねぎ'] },
+    // 食材インデックス（name/aliases → レコード）& 順序
+    let ING_INDEX = Object.create(null);
+    let ING_ORDER = Object.create(null); // name -> index（ingredients配列の順番）
 
-  { name: 'あじわいキノコ', img: 'images/ingredients/tastymushroom.png',
-    aliases: ['あじわい','キノコ'] },
+    // =========================
+    // dataset.json 読み込み
+    // =========================
+    async function loadDataset() {
+      try {
+        const res = await fetch('dataset.json', { cache: 'no-cache' });
+        if (!res.ok) throw new Error('dataset fetch failed');
+        const data = await res.json();
+        return data;
+      } catch (e) {
+        console.warn('dataset.json load failed. use DEFAULT_DATA', e);
+        return DEFAULT_DATA;
+      }
+    }
 
-  { name: 'とくせんエッグ', img: 'images/ingredients/fancyegg.png',
-    aliases: ['エッグ'] },
+    function buildIndexes(data) {
+      DATASET_INDEX.bySlug = Object.create(null);
+      DATASET_INDEX.byId   = Object.create(null);
+      data.recipes.forEach(r => {
+        const slug = r.slug || r.id;
+        DATASET_INDEX.bySlug[slug] = r;
+        DATASET_INDEX.byId[r.id] = r;
+      });
 
-  { name: 'ほっこりポテト', img: 'images/ingredients/softpotato.png',
-    aliases: ['ほっこり','ポテト'] },
+      ING_INDEX = Object.create(null);
+      ING_ORDER = Object.create(null);
+      data.ingredients.forEach((ing, idx) => {
+        const names = [ing.name, ...(ing.aliases || [])].filter(Boolean);
+        for (const k of names) ING_INDEX[k] = ing; // name/alias → レコード
+        ING_ORDER[ing.name] = idx;
+      });
+    }
 
-  { name: 'とくせんリンゴ', img: 'images/ingredients/fancyapple.png',
-    aliases: ['リンゴ'] },
+    function getRecipeListByGroup(group) {
+      const list = DATASET.recipes.filter(r => (r.group || 'A') === group);
+      list.sort((a,b) => (b.slug||b.id).localeCompare(a.slug||a.id, 'ja'));
+      return list;
+    }
 
-  { name: 'げきからハーブ', img: 'images/ingredients/fieryherb.png',
-    aliases: ['げきから','ハーブ'] },
+    function getRecipeParts(recipe) {
+      const per = recipe.per || {};
+      return Object.entries(per);
+    }
 
-  { name: 'マメミート', img: 'images/ingredients/beansausage.png',
-    aliases: ['マメ','ミート'] },
+function createIngImg(name, cls='ing-32') {
+  const img = document.createElement('img');
+  const rec = ING_INDEX[name];
+  img.alt = name;
+  img.title = name;
+  img.className = `ing-img ${cls}`;
 
-  { name: 'モーモーミルク', img: 'images/ingredients/moomoomilk.png',
-    aliases: ['モーモー','ミルク'] },
+  // 文字ベースのSVGプレースホルダ（404時に即座に切替）
+  const svg = encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'>
+      <rect width='100%' height='100%' fill='#f1f3f5'/>
+      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
+            font-size='10' fill='#6c757d'>${(name||'').slice(0,2)}</text>
+    </svg>`
+  );
+  const fallback = `data:image/svg+xml;charset=utf-8,${svg}`;
 
-  { name: 'あまいミツ', img: 'images/ingredients/honey.png',
-    aliases: ['あまい','ミツ'] },
+  img.src = (rec && rec.img) ? rec.img : fallback;
+  img.onerror = () => { img.onerror = null; img.src = fallback; };
 
-  { name: 'ピュアなオイル', img: 'images/ingredients/pureoil.png',
-    aliases: ['ピュア','オイル'] },
+  return img;
+}
 
-  { name: 'あったかジンジャー', img: 'images/ingredients/warmingginger.png',
-    aliases: ['あったか','ジンジャー'] },
-
-  { name: 'あんみんトマト', img: 'images/ingredients/snoozytomato.png',
-    aliases: ['あんみん','トマト'] },
-
-  { name: 'リラックスカカオ', img: 'images/ingredients/soothingcacao.png',
-    aliases: ['リラックス','カカオ'] },
-
-  { name: 'おいしいシッポ', img: 'images/ingredients/slowpoketail.png',
-    aliases: ['おいしい','シッポ'] },
-
-  { name: 'ワカクサ大豆', img: 'images/ingredients/greengrasssoybeans.png',
-    aliases: ['大豆'] },
-
-  { name: 'ワカクサコーン', img: 'images/ingredients/greengrasscorn.png',
-    aliases: ['コーン'] },
-
-  { name: 'めざましコーヒー', img: 'images/ingredients/wakeupcoffee.png',
-    aliases: ['めざまし','コーヒー'] }
-];
-
-// ジャンルリスト
-const genresList = ['カレー・シチュー','サラダ','デザート・ドリンク'];
-
-// レシピ一覧（parts は [食材名, 数量] の配列）
-const recipesRaw = [
-  // カレー・シチュー
-  {genre:'カレー・シチュー', name:'とくせんリンゴカレー', parts:[['とくせんリンゴ',7]]},
-  {genre:'カレー・シチュー', name:'あぶりテールカレー', parts:[['おいしいシッポ',8],['げきからハーブ',25]]},
-  {genre:'カレー・シチュー', name:'サンパワートマトカレー', parts:[['あんみんトマト',10],['げきからハーブ',5]]},
-  {genre:'カレー・シチュー', name:'ぜったいねむりバターカレー', parts:[['ほっこりポテト',18],['あんみんトマト',15],['リラックスカカオ',12],['モーモーミルク',10]]},
-  {genre:'カレー・シチュー', name:'からくちネギもりカレー', parts:[['ふといながねぎ',14],['あったかジンジャー',10],['げきからハーブ',8]]},
-  {genre:'カレー・シチュー', name:'キノコのほうしカレー', parts:[['あじわいキノコ',14],['ほっこりポテト',9]]},
-  {genre:'カレー・シチュー', name:'おやこあいカレー', parts:[['あまいミツ',12],['とくせんリンゴ',11],['とくせんエッグ',8],['ほっこりポテト',4]]},
-  {genre:'カレー・シチュー', name:'満腹チーズバーグカレー', parts:[['モーモーミルク',8],['マメミート',8]]},
-  {genre:'カレー・シチュー', name:'ほっこりホワイトシチュー', parts:[['モーモーミルク',10],['ほっこりポテト',8],['あじわいキノコ',4]]},
-  {genre:'カレー・シチュー', name:'たんじゅんホワイトシチュー', parts:[['モーモーミルク',7]]},
-  {genre:'カレー・シチュー', name:'マメバーグカレー', parts:[['マメミート',7]]},
-  {genre:'カレー・シチュー', name:'ベイビィハニーカレー', parts:[['あまいミツ',7]]},
-  {genre:'カレー・シチュー', name:'ニンジャカレー', parts:[['ワカクサ大豆',24],['マメミート',9],['ふといながねぎ',12],['あじわいキノコ',5]]},
-  {genre:'カレー・シチュー', name:'ひでりカツレツカレー', parts:[['マメミート',10],['ピュアなオイル',5]]},
-  {genre:'カレー・シチュー', name:'とけるオムカレー', parts:[['とくせんエッグ',10],['あんみんトマト',6]]},
-  {genre:'カレー・シチュー', name:'ビルドアップマメカレー', parts:[['ワカクサ大豆',12],['マメミート',6],['げきからハーブ',4],['とくせんエッグ',4]]},
-  {genre:'カレー・シチュー', name:'じゅうなんコーンシチュー', parts:[['ワカクサコーン',14],['モーモーミルク',8],['ほっこりポテト',8]]},
-  {genre:'カレー・シチュー', name:'れんごくコーンキーマカレー', parts:[['げきからハーブ',27],['マメミート',24],['ワカクサコーン',14],['あったかジンジャー',12]]},
-  {genre:'カレー・シチュー', name:'ピヨピヨパンチ辛口カレー', parts:[['めざましコーヒー',11],['げきからハーブ',11],['あまいミツ',11]]},
-  {genre:'カレー・シチュー', name:'めざめるパワーシチュー', parts:[['ワカクサ大豆',28],['あんみんトマト',25],['あじわいキノコ',23],['めざましコーヒー',16]]},
-  {genre:'カレー・シチュー', name:'いあいぎりすき焼きカレー', parts:[['ふといながねぎ',27],['マメミート',26],['あまいミツ',26],['とくせんエッグ',22]]},
-
-  // サラダ
-  {genre:'サラダ', name:'ヤドンテールのペッパーサラダ', parts:[['おいしいシッポ',10],['げきからハーブ',10],['ピュアなオイル',15]]},
-  {genre:'サラダ', name:'キノコのほうしサラダ', parts:[['あじわいキノコ',17],['あんみんトマト',8],['ピュアなオイル',8]]},
-  {genre:'サラダ', name:'ゆきかきシーザーサラダ', parts:[['モーモーミルク',10],['マメミート',6]]},
-  {genre:'サラダ', name:'くいしんぼうポテトサラダ', parts:[['ほっこりポテト',14],['とくせんエッグ',9],['マメミート',7],['とくせんリンゴ',6]]},
-  {genre:'サラダ', name:'うるおいとうふサラダ', parts:[['ワカクサ大豆',15],['あんみんトマト',9]]},
-  {genre:'サラダ', name:'ばかぢからワイルドサラダ', parts:[['マメミート',9],['あったかジンジャー',6],['とくせんエッグ',5],['ほっこりポテト',3]]},
-  {genre:'サラダ', name:'マメハムサラダ', parts:[['マメミート',8]]},
-  {genre:'サラダ', name:'あんみんトマトサラダ', parts:[['あんみんトマト',8]]},
-  {genre:'サラダ', name:'モーモーカプレーゼ', parts:[['モーモーミルク',12],['あんみんトマト',6],['ピュアなオイル',5]]},
-  {genre:'サラダ', name:'ムラっけチョコミートサラダ', parts:[['リラックスカカオ',14],['マメミート',9]]},
-  {genre:'サラダ', name:'オーバーヒートサラダ', parts:[['げきからハーブ',17],['あったかジンジャー',10],['あんみんトマト',8]]},
-  {genre:'サラダ', name:'とくせんリンゴサラダ', parts:[['とくせんリンゴ',8]]},
-  {genre:'サラダ', name:'めんえきねぎサラダ', parts:[['ふといながねぎ',10],['あったかジンジャー',5]]},
-  {genre:'サラダ', name:'メロメロりんごのチーズサラダ', parts:[['とくせんリンゴ',15],['モーモーミルク',5],['ピュアなオイル',3]]},
-  {genre:'サラダ', name:'ニンジャサラダ', parts:[['ふといながねぎ',15],['ワカクサ大豆',19],['あじわいキノコ',12],['あったかジンジャー',11]]},
-  {genre:'サラダ', name:'ねっぷうとうふサラダ', parts:[['ワカクサ大豆',10],['げきからハーブ',6]]},
-  {genre:'サラダ', name:'ワカクササラダ', parts:[['ピュアなオイル',22],['ワカクサコーン',17],['あんみんトマト',14],['ほっこりポテト',9]]},
-  {genre:'サラダ', name:'めいそうスイートサラダ', parts:[['とくせんリンゴ',21],['あまいミツ',16],['ワカクサコーン',12]]},
-  {genre:'サラダ', name:'みだれづきコーンサラダ', parts:[['ワカクサコーン',9],['ピュアなオイル',8]]},
-  {genre:'サラダ', name:'クロスチョップドサラダ', parts:[['とくせんエッグ',20],['マメミート',15],['ワカクサコーン',11],['あんみんトマト',10]]},
-  {genre:'サラダ', name:'まけんきコーヒーサラダ', parts:[['めざましコーヒー',28],['マメミート',28],['ピュアなオイル',22],['ほっこりポテト',22]]},
-  {genre:'サラダ', name:'はなふぶきミモザサラダ', parts:[['とくせんエッグ',25],['ピュアなオイル',17],['ほっこりポテト',15],['マメミート',12]]},
-  {genre:'サラダ', name:'りんごさんヨーグルトサラダ', parts:[['とくせんエッグ',35],['とくせんリンゴ',28],['あんみんトマト',23],['モーモーミルク',18]]},
-
-  // デザート・ドリンク
-  {genre:'デザート・ドリンク', name:'じゅくせいスイートポテト', parts:[['ほっこりポテト',9],['モーモーミルク',5]]},
-  {genre:'デザート・ドリンク', name:'ふくつのジンジャークッキー', parts:[['あまいミツ',14],['あったかジンジャー',12],['リラックスカカオ',5],['とくせんエッグ',4]]},
-  {genre:'デザート・ドリンク', name:'とくせんリンゴジュース', parts:[['とくせんリンゴ',8]]},
-  {genre:'デザート・ドリンク', name:'クラフトサイコソーダ', parts:[['あまいミツ',9]]},
-  {genre:'デザート・ドリンク', name:'ひのこのジンジャーティー', parts:[['あったかジンジャー',9],['とくせんリンゴ',7]]},
-  {genre:'デザート・ドリンク', name:'プリンのプリンアラモード', parts:[['あまいミツ',20],['とくせんエッグ',15],['モーモーミルク',10],['とくせんリンゴ',10]]},
-  {genre:'デザート・ドリンク', name:'あくまのキッスフルーツオレ', parts:[['とくせんリンゴ',11],['モーモーミルク',9],['あまいミツ',7],['リラックスカカオ',8]]},
-  {genre:'デザート・ドリンク', name:'ねがいごとアップルパイ', parts:[['とくせんリンゴ',12],['モーモーミルク',4]]},
-  {genre:'デザート・ドリンク', name:'ネロリのデトックスティー', parts:[['あったかジンジャー',11],['とくせんリンゴ',15],['あじわいキノコ',9]]},
-  {genre:'デザート・ドリンク', name:'あまいかおりチョコケーキ', parts:[['あまいミツ',9],['リラックスカカオ',8],['モーモーミルク',7]]},
-  {genre:'デザート・ドリンク', name:'モーモーホットミルク', parts:[['モーモーミルク',7]]},
-  {genre:'デザート・ドリンク', name:'かるわざソイケーキ', parts:[['とくせんエッグ',8],['ワカクサ大豆',7]]},
-  {genre:'デザート・ドリンク', name:'はりきりプロテインスムージー', parts:[['ワカクサ大豆',15],['リラックスカカオ',8]]},
-  {genre:'デザート・ドリンク', name:'マイペースやさいジュース', parts:[['あんみんトマト',9],['とくせんリンゴ',7]]},
-  {genre:'デザート・ドリンク', name:'おおきいマラサダ', parts:[['ピュアなオイル',10],['モーモーミルク',7],['あまいミツ',6]]},
-  {genre:'デザート・ドリンク', name:'ちからもちソイドーナッツ', parts:[['ピュアなオイル',12],['ワカクサ大豆',16],['リラックスカカオ',7]]},
-  {genre:'デザート・ドリンク', name:'だいばくはつポップコーン', parts:[['ワカクサコーン',15],['ピュアなオイル',14],['モーモーミルク',7]]},
-  {genre:'デザート・ドリンク', name:'おちゃかいコーンスコーン', parts:[['とくせんリンゴ',20],['あったかジンジャー',20],['ワカクサコーン',18],['モーモーミルク',9]]},
-  {genre:'デザート・ドリンク', name:'はなびらのまいチョコタルト', parts:[['リラックスカカオ',11],['とくせんリンゴ',11]]},
-  {genre:'デザート・ドリンク', name:'フラワーギフトマカロン', parts:[['リラックスカカオ',25],['とくせんエッグ',25],['あまいミツ',17],['モーモーミルク',10]]},
-  {genre:'デザート・ドリンク', name:'はやおきコーヒーゼリー', parts:[['めざましコーヒー',16],['モーモーミルク',14],['あまいミツ',12]]},
-  {genre:'デザート・ドリンク', name:'スパークスパイスコーラ', parts:[['とくせんリンゴ',35],['あったかジンジャー',20],['ふといながねぎ',20],['めざましコーヒー',12]]},
-  {genre:'デザート・ドリンク', name:'かたやぶりコーンティラミス', parts:[['めざましコーヒー',14],['ワカクサコーン',14],['モーモーミルク',12]]},
-  {genre:'デザート・ドリンク', name:'ドオーのエクレア', parts:[['リラックスカカオ',30],['モーモーミルク',26],['めざましコーヒー',24],['あまいミツ',22]]}
-];
-
-recipesRaw.reverse();
