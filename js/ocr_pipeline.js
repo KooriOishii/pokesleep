@@ -286,7 +286,7 @@ async function ocrHybridGrid(file, scaleOverride){
       thumbs.push(tc.toDataURL('image/png'));
     }
 
-    const scales = (scaleOverride ? [scaleOverride] : [0.6]);
+    const scales = (scaleOverride ? [scaleOverride] : [0.75]);
     const MAX_PAR = 2;
 
     status('読み取り中… 0/'+tiles.length);
